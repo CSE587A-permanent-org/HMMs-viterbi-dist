@@ -50,43 +50,6 @@ def _build_matrix(observation_seq: List[int], hmm) -> NDArray[np.float64]:
     viterbi_matrix = np.zeros((number_of_observations, number_of_states))
 
     # YOUR CODE HERE
-    # <snip>
-    # First observation: initial state probs * emission probs
-    viterbi_matrix[0] = (
-        np.array(hmm.initial_state_probs) *
-        np.array(hmm.emission_matrix)[observation_seq[0]]
-    )
-    # Normalize to avoid underflow
-    viterbi_matrix[0] = viterbi_matrix[0] / np.sum(viterbi_matrix[0])
-
-    # Fill in the rest of the matrix
-    for obs_idx in range(1, number_of_observations):
-        # For each state, compute:
-        # emission_prob * max(prev_state_prob * transition_prob)
-        emission_probs = np.array(
-            hmm.emission_matrix)[observation_seq[obs_idx]]
-
-        # Compute all possible transitions from previous states
-        # prev_probs * transition_matrix gives matrix where:
-        # - rows are source states
-        # - columns are destination states
-        # We take the max over source states for each destination
-        prev_probs = viterbi_matrix[obs_idx - 1]
-        transition_matrix = np.array(hmm.transition_matrix)
-
-        # Multiply each row of transition matrix by corresponding prev prob
-        transitions = prev_probs[:, np.newaxis] * transition_matrix
-
-        # Take max over source states (rows) for each dest state (column)
-        max_transitions = np.max(transitions, axis=0)
-
-        # Multiply by emission probabilities
-        viterbi_matrix[obs_idx] = emission_probs * max_transitions
-
-        # Normalize to avoid underflow
-        viterbi_matrix[obs_idx] = (viterbi_matrix[obs_idx] /
-                                    np.sum(viterbi_matrix[obs_idx]))
-    # </snip>
     return viterbi_matrix
 
 
@@ -101,22 +64,6 @@ def _traceback(viterbi_matrix: NDArray[np.float64], hmm) -> List[int]:
     state_seq = np.zeros(number_of_observations, dtype=int)
 
     # YOUR CODE HERE
-    # <snip>
-
-    # Start from the last observation - pick state with highest probability
-    state_seq[number_of_observations - 1] = _max_position(
-        viterbi_matrix[number_of_observations - 1]
-    )
-
-    # Trace back through the matrix
-    for obs_idx in range(number_of_observations - 2, -1, -1):
-        # For each previous observation, find the state that maximizes:
-        # viterbi_prob * transition_prob_to_next_state
-        next_state = state_seq[obs_idx + 1]
-        transition_probs = np.array(hmm.transition_matrix)[:, next_state]
-        combined_probs = viterbi_matrix[obs_idx] * transition_probs
-        state_seq[obs_idx] = _max_position(combined_probs)
-    # </snip>
 
     return state_seq.tolist()
 
