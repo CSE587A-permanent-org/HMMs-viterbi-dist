@@ -19,7 +19,19 @@
 	// there yet, it can lock onto the system interpreter for the workspace
 	// and ignore python.defaultInterpreterPath afterward. Installing here
 	// closes that race.
-	"onCreateCommand": "cd ${containerWorkspaceFolder} && poetry config virtualenvs.in-project true && poetry install",
+	//
+	// The first line appends ai-hosts-blocklist.txt to /etc/hosts, routing
+	// major AI provider domains to 0.0.0.0 -- a defense-in-depth measure so
+	// a CLI or script installed inside the container (e.g. `pip install
+	// openai` and a raw API call, or an AI CLI tool) can't reach its
+	// provider. It does NOT touch anything outside this container (a
+	// browser tab, phone, another device) and does NOT affect GitHub
+	// Copilot, whose traffic shares core github.com/githubusercontent.com
+	// infrastructure that the devcontainer itself depends on. The grep
+	// guard makes this safe to run more than once without duplicating
+	// entries, though in practice /etc/hosts is fresh on every new
+	// container and onCreateCommand runs once per container lifetime.
+	"onCreateCommand": "grep -qF 'AI / LLM provider blocklist' /etc/hosts || cat ${containerWorkspaceFolder}/.devcontainer/ai-hosts-blocklist.txt | sudo tee -a /etc/hosts > /dev/null; cd ${containerWorkspaceFolder} && poetry config virtualenvs.in-project true && poetry install",
 
 	// 👇 Configure tool-specific properties.
 	"customizations": {
@@ -27,11 +39,30 @@
             "extensions":["ms-python.python",
 						  "njpwerner.autodocstring",
 						  "ms-toolsai.jupyter",
-						  "ms-python.mypy-type-checker"],
+						  "ms-python.mypy-type-checker",
+						  "-github.copilot",
+						  "-github.copilot-chat"],
 			// python.pythonPath was removed by the Python extension years
 			// ago and is silently ignored; python.defaultInterpreterPath is
 			// the setting it actually reads.
-			"settings": {"python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"}
+			//
+			// This is a teaching lab -- students are meant to write this
+			// code themselves, so AI chat/agent/completion features are
+			// off by default here. A "-" prefix on an extension id
+			// uninstalls it if present; chat.disableAIFeatures hides the
+			// Chat/Agent UI entirely (panel, "build with agent" entry
+			// points, inline suggestions) for any extension that provides
+			// it, not just Copilot. None of this is unbreakable: these are
+			// ordinary settings a student can flip back in their own User
+			// settings, and it does nothing about AI used outside this
+			// editor/container (a browser tab, another device). It raises
+			// friction and sets the intended default; it is not a
+			// technical guarantee.
+			"settings": {
+				"python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+				"chat.disableAIFeatures": true,
+				"github.copilot.enable": {"*": false}
+			}
             }
 		}
 
