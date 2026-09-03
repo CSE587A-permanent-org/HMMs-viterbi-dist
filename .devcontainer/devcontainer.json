@@ -2,17 +2,36 @@
 	"name": "Comp Bio Student DevContainer",
 	"image": "ghcr.io/michael-brent/compbio-base:latest",
 
-	// 👇 Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "cd ${containerWorkspaceFolder} && poetry config virtualenvs.in-project true && poetry install",
+	// 👇 sshd lets `gh codespace ssh` / `logs` / `cp` reach the container
+	// directly. Without it those commands fail outright ("Please check if
+	// an SSH server is installed"), which blocks debugging a student's
+	// Codespace from the command line.
+	"features": {
+		"ghcr.io/devcontainers/features/sshd:1": {
+			"version": "latest"
+		}
+	},
+
+	// 👇 'onCreateCommand' runs and finishes before VS Code connects and its
+	// extensions activate (unlike 'postCreateCommand', which runs in the
+	// background while VS Code is already connecting). The Python extension
+	// auto-scans for an interpreter as soon as it activates; if .venv isn't
+	// there yet, it can lock onto the system interpreter for the workspace
+	// and ignore python.defaultInterpreterPath afterward. Installing here
+	// closes that race.
+	"onCreateCommand": "cd ${containerWorkspaceFolder} && poetry config virtualenvs.in-project true && poetry install",
 
 	// 👇 Configure tool-specific properties.
 	"customizations": {
         "vscode": {
-            "extensions":["ms-python.python", 
-						  "njpwerner.autodocstring", 
+            "extensions":["ms-python.python",
+						  "njpwerner.autodocstring",
 						  "ms-toolsai.jupyter",
 						  "ms-python.mypy-type-checker"],
-			"settings": {"python.pythonPath": "${workspaceFolder}/.venv/bin/python"}
+			// python.pythonPath was removed by the Python extension years
+			// ago and is silently ignored; python.defaultInterpreterPath is
+			// the setting it actually reads.
+			"settings": {"python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"}
             }
 		}
 
